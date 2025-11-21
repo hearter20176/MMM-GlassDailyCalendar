@@ -1,0 +1,462 @@
+/* MMM-GlassDailyCalendar.css
+ * Liquid glass styling aligned with MMM-AmbientWeather / MMM-MyAgenda / MMM-GlassCalendar
+ */
+
+.MMM-GlassDailyCalendar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #e9edf5;
+  font-family: "SF Pro Display", "SF Pro Text", "Inter", "Segoe UI", -apple-system, system-ui, sans-serif;
+  letter-spacing: 0.01em;
+}
+
+.glass-daily-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  padding: 4px;
+}
+
+.glass-daily-card {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  padding: 12px 14px 14px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 14px 38px rgba(0, 12, 48, 0.32),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+    radial-gradient(120% 120% at 12% 12%, rgba(134, 239, 255, 0.32), rgba(37, 99, 235, 0)),
+    radial-gradient(140% 140% at 88% 18%, rgba(224, 231, 255, 0.28), rgba(99, 102, 241, 0));
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  overflow: hidden;
+  color: var(--glass-ink);
+}
+
+.glass-daily-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.glass-daily-card::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.35));
+  transform: translateX(-60%) rotate(8deg);
+  animation: glass-shimmer 16s linear infinite;
+  opacity: 0.32;
+  pointer-events: none;
+}
+
+.glass-daily-card::after {
+  content: "";
+  position: absolute;
+  width: 280px;
+  height: 280px;
+  bottom: -140px;
+  right: -80px;
+  background:
+    radial-gradient(circle at 25% 30%, rgba(125, 211, 252, 0.65), rgba(14, 165, 233, 0.08)),
+    radial-gradient(circle at 80% 70%, rgba(129, 140, 248, 0.55), rgba(59, 130, 246, 0.1));
+  filter: blur(34px);
+  opacity: 0.45;
+  pointer-events: none;
+  animation: floatFade 18s ease-in-out infinite alternate;
+}
+
+.glass-daily-card.glass-theme-dark {
+  --glass-surface: rgba(15, 23, 42, 0.82);
+  --glass-surface-soft: rgba(255, 255, 255, 0.05);
+  --glass-ink: #e9edf5;
+  --glass-muted: rgba(233, 237, 245, 0.7);
+  --glass-accent: #7dd3fc;
+  --glass-accent-strong: #38bdf8;
+  color: var(--glass-ink);
+}
+
+.glass-daily-card.glass-theme-light {
+  --glass-surface: rgba(244, 247, 252, 0.9);
+  --glass-surface-soft: rgba(255, 255, 255, 0.7);
+  --glass-ink: #0f172a;
+  --glass-muted: rgba(15, 23, 42, 0.6);
+  --glass-accent: #38bdf8;
+  --glass-accent-strong: #0ea5e9;
+  color: var(--glass-ink);
+  box-shadow:
+    0 12px 26px rgba(15, 23, 42, 0.14),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.glass-daily-card.has-bg::before,
+.glass-daily-card.has-bg::after {
+  opacity: 0.22;
+}
+
+@keyframes floatFade {
+  0% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.55; }
+  100% { transform: translate3d(8px, -6px, 0) scale(1.05); opacity: 0.38; }
+}
+
+@keyframes glass-shimmer {
+  0% { transform: translateX(-60%) rotate(8deg); opacity: 0.32; }
+  50% { transform: translateX(30%) rotate(8deg); opacity: 0.14; }
+  100% { transform: translateX(120%) rotate(8deg); opacity: 0.32; }
+}
+
+/* Header */
+.glass-daily-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+  z-index: 1;
+}
+
+.glass-daily-title {
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  color: #e9edf5;
+}
+
+.glass-daily-meta {
+  font-size: 0.7rem;
+  color: var(--glass-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.glass-daily-meta .loading-text {
+  color: #e9edf5cc;
+}
+
+.glass-separator {
+  opacity: 0.55;
+}
+
+/* Weather row */
+.glass-daily-weather {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(224, 231, 255, 0.16), rgba(14, 165, 233, 0.18));
+  box-shadow:
+    0 2px 12px rgba(14, 165, 233, 0.12),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  color: var(--glass-ink);
+}
+
+.weather-icon {
+  margin-right: 1px;
+  color: var(--glass-accent-strong);
+}
+
+/* Day strip */
+.glass-day-strip {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  width: 100%;
+  overflow: hidden;
+}
+
+.glass-day-strip-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.glass-day-weather-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.glass-day-weather-cell {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.glass-day-card {
+  --busy-level: 0;
+  --day-bg-image: none;
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px 10px;
+  border-radius: 16px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.22),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: hidden;
+  isolation: isolate;
+  background-color: var(--glass-surface);
+  backdrop-filter: blur(8px);
+}
+
+.glass-day-card {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.glass-day-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--day-bg-image, none);
+  background-size: inherit;
+  background-position: inherit;
+  background-repeat: inherit;
+  opacity: 0.45;
+  mix-blend-mode: screen;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.glass-day-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.glass-day-card.today {
+  box-shadow:
+    0 0 0 1px rgba(125, 211, 252, 0.9),
+    0 10px 24px rgba(14, 165, 233, 0.32);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06));
+}
+
+.glass-day-card.past-day {
+  opacity: 0.72;
+}
+
+.glass-day-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.glass-day-name {
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  color: var(--glass-muted);
+  text-transform: uppercase;
+}
+
+.glass-day-date {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--glass-ink);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.28);
+}
+
+.glass-day-count {
+  font-size: 0.7rem;
+  color: var(--glass-muted);
+  white-space: nowrap;
+}
+
+.glass-day-weather {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  font-size: 0.72rem;
+  color: #e9edf5b8;
+}
+
+.glass-weather-lottie {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.glass-day-events {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-height: 32px;
+}
+
+.glass-day-empty {
+  font-size: 0.72rem;
+  color: rgba(233, 237, 245, 0.78);
+  opacity: 0.9;
+}
+
+.glass-event-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  color: var(--glass-ink);
+}
+
+.glass-event-row.allday {
+  font-weight: 650;
+  border-radius: 10px;
+  padding: 4px 6px;
+}
+
+.glass-event-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  margin-top: 4px;
+  flex-shrink: 0;
+  background: var(--glass-accent-strong);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+}
+
+.glass-event-icon {
+  margin-top: 1px;
+  font-size: 0.95em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: currentColor;
+}
+
+.iconoir-img.glass-event-icon {
+  width: 0.9em;
+  height: 0.9em;
+  object-fit: contain;
+  filter: brightness(1.05);
+  display: inline-block;
+  vertical-align: -0.05em;
+}
+
+.iconoir-css-fallback.glass-event-icon {
+  font-size: 1em;
+  line-height: 1;
+  vertical-align: -0.05em;
+}
+
+.glass-event-title {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.glass-event-time {
+  color: var(--glass-muted);
+  font-weight: 600;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  margin-left: 6px;
+}
+
+.glass-day-more {
+  font-size: 0.7rem;
+  color: var(--glass-muted);
+}
+
+.glass-day-heatbar {
+  position: relative;
+  height: 4px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.glass-day-heatbar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: calc(var(--busy-pct, 0) * 100%);
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.15), rgba(56, 189, 248, 0.75));
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.45);
+  transition: width 200ms ease;
+}
+
+/* Marquee for overflowed titles */
+.glass-marquee {
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+  width: 100%;
+  display: block;
+  text-overflow: clip;
+}
+
+.glass-marquee span {
+  display: inline-block;
+  min-width: 100%;
+  padding-left: 0;
+  animation: glass-marquee-scroll 10s linear infinite;
+}
+
+@keyframes glass-marquee-scroll {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+/* Spinner */
+.glass-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.26);
+  border-top-color: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  animation: glass-spin 0.7s linear infinite;
+}
+
+@keyframes glass-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  .glass-daily-card {
+    padding: 10px 10px 12px;
+  }
+
+  .glass-day-strip {
+    gap: 6px;
+  }
+
+  .glass-day-date {
+    font-size: 1.2rem;
+  }
+
+  .glass-event-row {
+    font-size: 0.72rem;
+  }
+}
