@@ -15,8 +15,6 @@ Replace these placeholders with your captures (suggested paths in `docs/media/`)
 
 ![Bottom bar view](docs/media/daily-strip.png "Bottom bar horizontal strip showing events and busy bars")
 
-![Marquee + weather](docs/media/marquee-weather.gif "Marquee overflow with AmbientWeather row and weather.gov chips")
-
 ## Prerequisites
 - MagicMirror.
 - Optional data sources:
