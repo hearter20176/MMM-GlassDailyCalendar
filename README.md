@@ -10,6 +10,13 @@ Glass-style horizontal daily calendar strip for MagicMirror `bottom_bar`. Pulls 
 - Optional per-date or rule-based backgrounds to personalize day chips.
 - Weather row: AmbientWeather realtime for today and weather.gov forecast for upcoming days (lat/long).
 
+## Screenshots
+Replace these placeholders with your captures (suggested paths in `docs/media/`):
+
+![Bottom bar view](docs/media/daily-strip.png "Bottom bar horizontal strip showing events and busy bars")
+
+![Marquee + weather](docs/media/marquee-weather.gif "Marquee overflow with AmbientWeather row and weather.gov chips")
+
 ## Prerequisites
 - MagicMirror.
 - Optional data sources:
