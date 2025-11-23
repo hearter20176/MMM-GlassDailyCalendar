@@ -957,6 +957,8 @@ Module.register("MMM-GlassDailyCalendar", {
     if (cond.includes("snow")) return "fa-solid fa-snowflake";
     if (cond.includes("fog") || cond.includes("mist"))
       return "fa-solid fa-smog";
+    if (cond.includes("partly") || cond.includes("mostly"))
+      return "fa-solid fa-cloud-sun";
     if (cond.includes("sun") || cond.includes("clear"))
       return "fa-solid fa-sun";
     if (cond.includes("cloud")) return "fa-solid fa-cloud-sun";
@@ -990,7 +992,7 @@ Module.register("MMM-GlassDailyCalendar", {
 
   getLottieForCondition(cond, isDay = true) {
     const map = {
-      clear: { day: "clear_isDay.json", night: "clear-night.json" },
+      clear: { day: "clear_isDay.json", night: "clear_night.json" },
       partly_cloudy: {
         day: "partly-cloudy_isDay.json",
         night: "partly-cloudy-night.json"
