@@ -51,6 +51,10 @@ Module.register("MMM-GlassDailyCalendar", {
     sunriseHour: 7,
     sunsetHour: 19,
 
+    // Performance
+    performanceProfile: "auto", // auto | pi | full
+    reduceMotion: false,
+
     // Intervals
     updateInterval: 10 * 60 * 1000,
     animationSpeed: 400
@@ -60,11 +64,15 @@ Module.register("MMM-GlassDailyCalendar", {
   // Assets
   // ---------------------------------------------------------------------------
   getScripts() {
-    return [
+    const reduceMotion = this.shouldReduceMotion();
+    const scripts = [
       this.file("node_modules/moment/min/moment-with-locales.min.js"),
-      this.file("node_modules/iconify-icon/dist/iconify-icon.min.js"),
-      this.file("vendor/lottie.min.js")
+      this.file("node_modules/iconify-icon/dist/iconify-icon.min.js")
     ];
+    if (!reduceMotion) {
+      scripts.push(this.file("vendor/lottie.min.js"));
+    }
+    return scripts;
   },
 
   getStyles() {
@@ -100,6 +108,26 @@ Module.register("MMM-GlassDailyCalendar", {
     this.forecastDays = [];
     this.lastFetch = null;
     this.hiddenCalendars = new Set();
+    this.domUpdateTimer = null;
+    this.performanceProfile = this.resolvePerformanceProfile();
+    this.reduceMotion = this.shouldReduceMotion();
+    this.performanceTuning = {
+      domUpdateDebounce: this.performanceProfile === "pi" ? 600 : 0,
+      maxEventsPerDay:
+        this.performanceProfile === "pi"
+          ? Math.min(this.config.maxEventsPerDay, 3)
+          : this.config.maxEventsPerDay,
+      allowMarquee:
+        this.config.marqueeEvents &&
+        !this.reduceMotion &&
+        this.performanceProfile !== "pi" &&
+        !(
+          typeof window !== "undefined" &&
+          window.matchMedia &&
+          window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        )
+    };
+    this.enableLottie = !this.reduceMotion;
 
     moment.locale(this.config.locale);
 
@@ -112,7 +140,7 @@ Module.register("MMM-GlassDailyCalendar", {
     if (this.config.icalSources && this.config.icalSources.length > 0) {
       this.scheduleFetch();
     } else {
-      this.updateDom();
+      this.queueDomUpdate();
     }
 
     if (
@@ -175,7 +203,7 @@ Module.register("MMM-GlassDailyCalendar", {
       Log.error(`[${this.name}] node_helper error`, payload);
     } else if (notification === "GLASSDAILYCALENDAR_FORECAST") {
       this.forecastDays = payload && Array.isArray(payload.days) ? payload.days : [];
-      this.updateDom(this.config.animationSpeed);
+      this.queueDomUpdate(this.config.animationSpeed);
     }
   },
 
@@ -203,7 +231,7 @@ Module.register("MMM-GlassDailyCalendar", {
 
   handleAmbientWeather(payload) {
     this.weatherSummary = payload || null;
-    this.updateDom(this.config.animationSpeed);
+    this.queueDomUpdate(this.config.animationSpeed);
   },
 
   // ---------------------------------------------------------------------------
@@ -266,7 +294,7 @@ Module.register("MMM-GlassDailyCalendar", {
     this.events = this.events.concat(normalized);
     this.pruneDayDuplicates(range.start, range.end);
     this.loaded = true;
-    this.updateDom(this.config.animationSpeed);
+    this.queueDomUpdate(this.config.animationSpeed);
   },
 
   pruneEventsBySource(sourceType) {
@@ -535,7 +563,9 @@ Module.register("MMM-GlassDailyCalendar", {
       empty.innerHTML = "No events";
       list.appendChild(empty);
     } else {
-      const limited = events.slice(0, this.config.maxEventsPerDay);
+      const maxEvents =
+        this.performanceTuning.maxEventsPerDay || this.config.maxEventsPerDay;
+      const limited = events.slice(0, maxEvents);
       limited.forEach((ev) => list.appendChild(this.renderEventRow(ev)));
 
       if (this.config.showOverflowIndicator && events.length > limited.length) {
@@ -580,7 +610,7 @@ Module.register("MMM-GlassDailyCalendar", {
 
     let title;
     const needsMarquee =
-      this.config.marqueeEvents &&
+      this.performanceTuning.allowMarquee &&
       this.shouldMarquee(ev.title || "", this.config.marqueeThreshold);
 
     if (needsMarquee) {
@@ -678,7 +708,7 @@ Module.register("MMM-GlassDailyCalendar", {
     const chip = document.createElement("div");
     chip.className = "glass-day-weather";
 
-    if (info.lottie) {
+    if (info.lottie && this.enableLottie) {
       const anim = document.createElement("div");
       anim.className = "glass-weather-lottie";
       chip.appendChild(anim);
@@ -702,6 +732,7 @@ Module.register("MMM-GlassDailyCalendar", {
   },
 
   loadLottieAnimation(container, src) {
+    if (this.reduceMotion || !this.enableLottie) return;
     if (!container || !src) return;
 
     if (typeof lottie === "undefined") {
@@ -1179,6 +1210,44 @@ Module.register("MMM-GlassDailyCalendar", {
     };
 
     return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  },
+
+  queueDomUpdate(speed = this.config.animationSpeed) {
+    const debounce = this.performanceTuning.domUpdateDebounce;
+    if (!debounce) {
+      this.updateDom(speed);
+      return;
+    }
+    if (this.domUpdateTimer) {
+      clearTimeout(this.domUpdateTimer);
+    }
+    this.domUpdateTimer = setTimeout(() => {
+      this.updateDom(speed);
+      this.domUpdateTimer = null;
+    }, debounce);
+  },
+
+  resolvePerformanceProfile() {
+    const requested = (this.config.performanceProfile || "auto").toLowerCase();
+    if (requested === "pi" || requested === "full") return requested;
+    const ua =
+      typeof navigator !== "undefined" && navigator.userAgent ? navigator.userAgent : "";
+    const isPi =
+      ua.includes("raspberry") ||
+      ua.includes("armv7") ||
+      ua.includes("aarch64") ||
+      ua.includes("linux arm");
+    return isPi ? "pi" : "full";
+  },
+
+  shouldReduceMotion() {
+    return (
+      this.config.reduceMotion === true ||
+      this.resolvePerformanceProfile() === "pi" ||
+      (typeof window !== "undefined" &&
+        window.matchMedia &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+    );
   },
 
   applyAlpha(color, alpha) {

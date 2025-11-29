@@ -50,6 +50,8 @@ Add to `config/config.js`:
     marqueeThreshold: 26,
     maxEventsPerDay: 4,
     showOverflowIndicator: true,
+    performanceProfile: "auto", // "auto" | "pi" | "full"
+    reduceMotion: false,        // true disables marquee/lottie on Pi or reduced-motion
 
     // Sources (toggle per module)
     useCalendarModule: false,
@@ -95,6 +97,7 @@ Add to `config/config.js`:
 - **Theme**: `theme`, `sunriseHour`, `sunsetHour`, `highlightToday`, `dimPastDays`.
 - **Icons/backgrounds**: `eventIcons` map, `calendarVisibility`, `dayBackgrounds`, `dayBackgroundRules`.
 - **Weather**: `weatherGov.enabled`, `latitude`, `longitude` (required for weather.gov forecast when enabled).
+- **Performance**: `performanceProfile` (`auto`/`pi`/`full`), `reduceMotion` to force low-motion and skip lottie/marquee on Pi.
 
 ### Notifications & integrations
 - Listens for `CALENDAR_EVENTS`, `MYAGENDA_EVENTS`, and `AMBIENT_WEATHER_DATA` when the corresponding `use*` flags are `true`. Ensure those modules are configured to broadcast their payloads.
