@@ -48,10 +48,12 @@
   position: absolute;
   inset: -20%;
   background: linear-gradient(120deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.35));
-  transform: translateX(-60%) rotate(8deg);
-  animation: glass-shimmer 16s linear infinite;
+  rotate: 8deg;
+  translate: -60% 0;
+  animation: glass-shimmer 24s linear infinite;
   opacity: 0.32;
   pointer-events: none;
+  will-change: translate, opacity;
 }
 
 .glass-daily-card::after {
@@ -68,6 +70,7 @@
   opacity: 0.45;
   pointer-events: none;
   animation: floatFade 18s ease-in-out infinite alternate;
+  will-change: transform, opacity;
 }
 
 .glass-daily-card.glass-theme-dark {
@@ -104,9 +107,9 @@
 }
 
 @keyframes glass-shimmer {
-  0% { transform: translateX(-60%) rotate(8deg); opacity: 0.32; }
-  50% { transform: translateX(30%) rotate(8deg); opacity: 0.14; }
-  100% { transform: translateX(120%) rotate(8deg); opacity: 0.32; }
+  0%   { translate: -60% 0; opacity: 0.32; }
+  50%  { translate: 30% 0;  opacity: 0.18; }
+  100% { translate: 120% 0; opacity: 0.32; }
 }
 
 /* Header */
@@ -222,6 +225,7 @@
   overflow: hidden;
   isolation: isolate;
   background-color: var(--glass-surface);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
 
@@ -406,10 +410,12 @@
   content: "";
   position: absolute;
   inset: 0;
-  width: calc(var(--busy-pct, 0) * 100%);
+  width: 100%;
+  transform: scaleX(var(--busy-pct, 0));
+  transform-origin: left center;
   background: linear-gradient(90deg, rgba(56, 189, 248, 0.15), rgba(56, 189, 248, 0.75));
   box-shadow: 0 0 12px rgba(56, 189, 248, 0.45);
-  transition: width 200ms ease;
+  transition: transform 200ms ease;
 }
 
 /* Marquee for overflowed titles */
@@ -420,18 +426,29 @@
   width: 100%;
   display: block;
   text-overflow: clip;
+  contain: content;
+  container-type: inline-size;
 }
 
-.glass-marquee span {
+.glass-marquee-track {
+  display: inline-flex;
+  align-items: center;
+  animation: glass-marquee-scroll var(--glass-marquee-duration, 70s) linear infinite;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+}
+
+.glass-marquee-track span {
   display: inline-block;
-  min-width: 100%;
-  padding-left: 0;
-  animation: glass-marquee-scroll 10s linear infinite;
+  min-width: 100cqi;
+  padding-right: 40px;
+  white-space: nowrap;
 }
 
 @keyframes glass-marquee-scroll {
-  0% { transform: translateX(100%); }
-  100% { transform: translateX(-100%); }
+  0%   { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
 }
 
 /* Spinner */
