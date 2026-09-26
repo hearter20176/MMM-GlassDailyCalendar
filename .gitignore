@@ -2,3 +2,5 @@ node_modules/
 npm-debug.log*
 .DS_Store
 *.log
+# Last-good ICS copies (calendar data)
+cache/
