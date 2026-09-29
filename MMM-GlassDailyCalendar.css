@@ -50,7 +50,7 @@
   background: linear-gradient(120deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.35));
   rotate: 8deg;
   translate: -60% 0;
-  animation: glass-shimmer 24s linear infinite;
+  animation: glass-daily-shimmer 24s linear infinite;
   opacity: 0.32;
   pointer-events: none;
   will-change: translate, opacity;
@@ -69,7 +69,7 @@
   filter: blur(34px);
   opacity: 0.45;
   pointer-events: none;
-  animation: floatFade 18s ease-in-out infinite alternate;
+  animation: glass-daily-float 18s ease-in-out infinite alternate;
   will-change: transform, opacity;
 }
 
@@ -101,12 +101,12 @@
   opacity: 0.22;
 }
 
-@keyframes floatFade {
+@keyframes glass-daily-float {
   0% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.55; }
   100% { transform: translate3d(8px, -6px, 0) scale(1.05); opacity: 0.38; }
 }
 
-@keyframes glass-shimmer {
+@keyframes glass-daily-shimmer {
   0%   { translate: -60% 0; opacity: 0.32; }
   50%  { translate: 30% 0;  opacity: 0.18; }
   100% { translate: 120% 0; opacity: 0.32; }
@@ -139,7 +139,17 @@
 }
 
 .glass-daily-meta .loading-text {
-  color: #e9edf5cc;
+  color: var(--glass-ink);
+}
+
+.glass-daily-meta.glass-daily-meta-warning {
+  color: #f59e0b;
+}
+
+/* #f59e0b on the light card's surface is ~2.00:1 (fails WCAG AA); #b45309
+   measures ~4.68:1 on that surface while staying on-brand amber. */
+.glass-daily-card.glass-theme-light .glass-daily-meta.glass-daily-meta-warning {
+  color: #b45309;
 }
 
 .glass-separator {
@@ -173,6 +183,12 @@
   color: #e9edf5;
   font-weight: 600;
   letter-spacing: 0.01em;
+}
+
+.weather-text.muted {
+  color: var(--glass-muted);
+  font-weight: 500;
+  font-style: italic;
 }
 
 /* Day strip */
@@ -227,9 +243,6 @@
   background-color: var(--glass-surface);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
-}
-
-.glass-day-card {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -322,7 +335,7 @@
 
 .glass-day-empty {
   font-size: 0.72rem;
-  color: rgba(233, 237, 245, 0.78);
+  color: var(--glass-muted);
   opacity: 0.9;
 }
 
@@ -451,10 +464,11 @@
   display: inline-block;
   width: 12px;
   height: 12px;
-  border: 2px solid rgba(255, 255, 255, 0.26);
-  border-top-color: rgba(255, 255, 255, 0.9);
+  border: 2px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-top-color: currentColor;
   border-radius: 50%;
   animation: glass-spin 0.7s linear infinite;
+  color: var(--glass-ink);
 }
 
 @keyframes glass-spin {

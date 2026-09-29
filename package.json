@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Glass-style daily calendar strip for MagicMirror bottom_bar.",
   "main": "MMM-GlassDailyCalendar.js",
+  "scripts": {
+    "test": "node --test"
+  },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.5.1",
     "boxicons": "^2.1.4",

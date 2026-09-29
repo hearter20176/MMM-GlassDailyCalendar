@@ -114,6 +114,7 @@ module.exports = NodeHelper.create({
   },
 
   async fetchCalendars(payload) {
+    const identifier = payload && payload.identifier;
     try {
       const icalSources = (payload && payload.icalSources) || [];
       const startRaw = payload && payload.rangeStart;
@@ -138,16 +139,22 @@ module.exports = NodeHelper.create({
         } catch (err) {
           console.error(`[MMM-GlassDailyCalendar] ICS fetch error for ${maskUrl(source.url)}: ${errText(err)}`);
           this.sendSocketNotification("GLASSDAILYCALENDAR_ERROR", {
-            url: source.url,
+            identifier,
+            kind: "ics",
+            // Never send the raw URL to the front end (it may embed a
+            // private Google ICS token); mask it or fall back to the name.
+            url: source.name || maskUrl(source.url),
             message: errText(err)
           });
         }
       }
 
-      this.sendSocketNotification("GLASSDAILYCALENDAR_EVENTS", { events: allEvents });
+      this.sendSocketNotification("GLASSDAILYCALENDAR_EVENTS", { identifier, events: allEvents });
     } catch (err) {
       console.error("[MMM-GlassDailyCalendar] fetchCalendars fatal error", err);
       this.sendSocketNotification("GLASSDAILYCALENDAR_ERROR", {
+        identifier,
+        kind: "ics",
         message: errText(err)
       });
     }
@@ -317,6 +324,7 @@ module.exports = NodeHelper.create({
   },
 
   async fetchForecast(payload) {
+    const identifier = payload && payload.identifier;
     try {
       const lat = payload && payload.latitude;
       const lon = payload && payload.longitude;
@@ -325,15 +333,18 @@ module.exports = NodeHelper.create({
       }
 
       const ua = { "User-Agent": "MagicMirror-MMM-GlassDailyCalendar" };
+      // Unlike the ICS path, these had no timeout: a hung weather.gov
+      // request would pile up alongside every subsequent scheduled fetch.
       const pointRes = await fetch(`https://api.weather.gov/points/${lat},${lon}`, {
-        headers: ua
+        headers: ua,
+        signal: AbortSignal.timeout(30000)
       });
       if (!pointRes.ok) throw new Error("points HTTP " + pointRes.status);
       const pointJson = await pointRes.json();
       const forecastUrl = pointJson && pointJson.properties && pointJson.properties.forecast;
       if (!forecastUrl) throw new Error("No forecast URL from weather.gov");
 
-      const fcRes = await fetch(forecastUrl, { headers: ua });
+      const fcRes = await fetch(forecastUrl, { headers: ua, signal: AbortSignal.timeout(30000) });
       if (!fcRes.ok) throw new Error("forecast HTTP " + fcRes.status);
       const fcJson = await fcRes.json();
       const periods = (fcJson && fcJson.properties && fcJson.properties.periods) || [];
@@ -361,10 +372,12 @@ module.exports = NodeHelper.create({
         icon: data.icon || null
       }));
 
-      this.sendSocketNotification("GLASSDAILYCALENDAR_FORECAST", { days });
+      this.sendSocketNotification("GLASSDAILYCALENDAR_FORECAST", { identifier, days });
     } catch (err) {
       console.error("[MMM-GlassDailyCalendar] forecast error", err);
       this.sendSocketNotification("GLASSDAILYCALENDAR_ERROR", {
+        identifier,
+        kind: "forecast",
         message: errText(err)
       });
     }
