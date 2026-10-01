@@ -432,8 +432,8 @@
 }
 
 /* Marquee: long titles scroll via Web Animations in _startMarquees(); each title loops
-   on its own. The resets below also neutralise older marquee rules (continuous CSS
-   animation, zero-width inline-size containment) still present in css/custom.css. */
+   on its own. The resets below neutralise older marquee styling (continuous CSS
+   animation, zero-width inline-size containment) that a custom.css may still carry. */
 .glass-marquee {
   position: relative;
   display: block;
@@ -444,16 +444,18 @@
   container-type: normal;
 }
 
-.glass-marquee-track {
+/* The track is itself a <span>; the child selector keeps it inline-block so it
+   reports a scrollWidth (overflow is measured) and accepts the translateX
+   animation. An inline track measured 0 wide and never scrolled. */
+.glass-marquee > .glass-marquee-track {
   display: inline-block;
   white-space: nowrap;
   animation: none;
   transform: none;
-  will-change: transform;
 }
 
 .glass-marquee-track span,
-.glass-marquee span {
+.glass-marquee span:not(.glass-marquee-track) {
   display: inline;
   min-width: 0;
   padding-right: 0;
