@@ -202,7 +202,7 @@ test("renderDayWeather: a forecast-only failure shows a visible 'Forecast unavai
     mapWeatherToIcon: mod.mapWeatherToIcon,
     getLottieForCondition: mod.getLottieForCondition,
     isDaytimeFromSummary: mod.isDaytimeFromSummary,
-    loadLottieAnimation: () => {}
+    _registerAnimation: () => {}
   };
   const chip = mod.renderDayWeather.call(ctx, moment().add(2, "days"), moment());
   assert.ok(chip, "expected a visible chip instead of null");
@@ -222,7 +222,7 @@ test("renderDayWeather: no forecast error and no data still renders nothing (unc
     mapWeatherToIcon: mod.mapWeatherToIcon,
     getLottieForCondition: mod.getLottieForCondition,
     isDaytimeFromSummary: mod.isDaytimeFromSummary,
-    loadLottieAnimation: () => {}
+    _registerAnimation: () => {}
   };
   const chip = mod.renderDayWeather.call(ctx, moment().add(2, "days"), moment());
   assert.equal(chip, null);

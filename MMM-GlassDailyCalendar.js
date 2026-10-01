@@ -111,6 +111,14 @@ Module.register("MMM-GlassDailyCalendar", {
     this.lastFetch = null;
     this.hiddenCalendars = new Set();
     this.domUpdateTimer = null;
+    this.lottieInstances = []; // every live Lottie player this module owns: { player, container }
+    this.marqueeAnims = []; // every live title-marquee Web Animation: { anim, track }
+    this.pendingAnims = []; // containers from the latest getDom() awaiting a player
+    this.renderGen = 0; // bumped on every getDom(); invalidates timers from older renders
+    this.animTimer = null;
+    this.suspended = false;
+    this._lottieLoading = false;
+    this._lottieFailed = false;
     this.performanceProfile = this.resolvePerformanceProfile();
     this.reduceMotion = this.shouldReduceMotion();
     this.performanceTuning = {
@@ -211,6 +219,22 @@ Module.register("MMM-GlassDailyCalendar", {
     if (notification === "PAGE_THEME_CHANGED" && this.config.theme === "autoSun") {
       this.queueDomUpdate(this.config.animationSpeed);
     }
+
+    // MagicMirror sends this to the module after every updateDom() resolves (swapped or
+    // skipped), so it is the deterministic moment to reap the outgoing tree and bind the new
+    // containers. The bounded poll in _startAnimations() is only a fallback.
+    if (notification === "MODULE_DOM_UPDATED") this._startAnimations();
+  },
+
+  // Called by MagicMirror when the module is hidden (e.g. MMM-pages rotation).
+  suspend() {
+    this.suspended = true;
+    this._pauseAnimations();
+  },
+
+  resume() {
+    this.suspended = false;
+    this._startAnimations();
   },
 
   socketNotificationReceived(notification, payload) {
@@ -408,6 +432,9 @@ Module.register("MMM-GlassDailyCalendar", {
   // Rendering root
   // ---------------------------------------------------------------------------
   getDom() {
+    // New render generation; old players stay alive until their (visible) tree is swapped out.
+    this._beginRender();
+
     const wrapper = document.createElement("div");
     wrapper.className = "glass-daily-wrapper";
 
@@ -431,6 +458,9 @@ Module.register("MMM-GlassDailyCalendar", {
     card.appendChild(this.renderDayStrip(range));
     wrapper.appendChild(card);
     this._startMarquees(wrapper);
+    // Players start once MagicMirror has attached this tree (container.isConnected); this call
+    // also reaps players left on the outgoing tree.
+    this._startAnimations();
     return wrapper;
   },
 
@@ -769,7 +799,7 @@ Module.register("MMM-GlassDailyCalendar", {
       const anim = document.createElement("div");
       anim.className = "glass-weather-lottie";
       chip.appendChild(anim);
-      this.loadLottieAnimation(anim, info.lottie);
+      this._registerAnimation(anim, info.lottie);
     } else if (info.icon) {
       const iconEl = document.createElement("i");
       iconEl.className = "weather-icon " + info.icon;
@@ -791,43 +821,178 @@ Module.register("MMM-GlassDailyCalendar", {
     return chip;
   },
 
-  loadLottieAnimation(container, src) {
+  // ---- Lottie lifecycle -----------------------------------------------------------------
+  //
+  // getDom() builds a brand-new DOM tree on every render while MagicMirror keeps the previous
+  // tree attached for the fade-out, and MagicMirror may even skip the swap entirely when the new
+  // markup equals the old. So containers are never looked up by id, and players from the previous
+  // render are NOT destroyed in getDom(): they keep running on the visible tree until their
+  // container is actually detached, at which point _startAnimations() reaps them. Each render
+  // registers the exact container elements it created (this.pendingAnims); a player is created
+  // only once such a container is connected. renderGen invalidates timers from older renders.
+  // this.lottieInstances holds { player, container } for every live player.
+
+  _clearAnimTimer() {
+    if (this.animTimer) {
+      clearTimeout(this.animTimer);
+      this.animTimer = null;
+    }
+  },
+
+  _destroyPlayer(entry) {
+    try {
+      entry.player.destroy();
+    } catch (err) {
+      Log.warn(`[${this.name}] Failed to destroy lottie player:`, err);
+    }
+  },
+
+  // Destroys players and cancels marquee animations whose element is no longer in the document
+  // (the swapped-out tree). A running Web Animation keeps its detached element, and with it the
+  // whole old render tree, alive, so these must be cancelled explicitly. Runs regardless of
+  // whether Lottie is enabled.
+  _reapDetachedAnimations() {
+    this.marqueeAnims = (this.marqueeAnims || []).filter((entry) => {
+      if (entry.track.isConnected) return true;
+      this._cancelMarquee(entry);
+      return false;
+    });
+    this.lottieInstances = (this.lottieInstances || []).filter((entry) => {
+      if (entry.container.isConnected) return true;
+      this._destroyPlayer(entry);
+      return false;
+    });
+  },
+
+  _cancelMarquee(entry) {
+    try {
+      entry.anim.cancel();
+    } catch (err) {
+      Log.warn(`[${this.name}] Failed to cancel marquee animation:`, err);
+    }
+    if (entry.track._marqueeAnim === entry.anim) entry.track._marqueeAnim = null;
+  },
+
+  // Starts a new render generation: drops the previous registrations and timer. Live players are
+  // left alone (see above).
+  _beginRender() {
+    this.renderGen = (this.renderGen || 0) + 1;
+    this._clearAnimTimer();
+    this.pendingAnims = [];
+  },
+
+  // Registers a container created by the current getDom() pass; the player starts later. `src`
+  // is a path/URL string or an inline animationData object.
+  _registerAnimation(container, src) {
     if (this.reduceMotion || !this.enableLottie) return;
     if (!container || !src) return;
+    this.pendingAnims = this.pendingAnims || [];
+    this.pendingAnims.push({ container, src, player: null });
+  },
 
-    if (typeof lottie === "undefined") {
-      if (!this._lottieLoading) {
-        this._lottieLoading = true;
-        const script = document.createElement("script");
-        script.src = this.file("vendor/lottie.min.js");
-        script.onload = () => {
-          this._lottieLoading = false;
-          this.loadLottieAnimation(container, src);
-        };
-        script.onerror = () => {
-          this._lottieLoading = false;
-        };
-        document.body.appendChild(script);
-      }
-      return;
-    }
-
-    const opts = {
-      container,
-      renderer: "svg",
-      loop: true,
-      autoplay: true
+  // Injects the lottie script once when the global is missing (getScripts() normally loads it).
+  // On load the current render's registrations are bound through the normal lifecycle, so no
+  // container is captured here and one that detached meanwhile never gets a player.
+  _loadLottieScript() {
+    if (this._lottieLoading || this._lottieFailed) return;
+    this._lottieLoading = true;
+    const script = document.createElement("script");
+    script.src = this.file("vendor/lottie.min.js");
+    script.onload = () => {
+      this._lottieLoading = false;
+      this._startAnimations();
     };
-    if (typeof src === "string") {
-      opts.path = this.resolveLottiePath(src);
-    } else {
-      opts.animationData = src;
+    script.onerror = () => {
+      this._lottieLoading = false;
+      this._lottieFailed = true; // do not retry on every render
+    };
+    document.body.appendChild(script);
+  },
+
+  // Creates players for registered containers that are now attached to the document and reaps
+  // players on detached containers. Items whose container is not attached yet (new DOM still
+  // waiting for the old DOM to fade out) are retried on a short timer, bounded by `attempts`.
+  // Players are only created/resumed while the module is not suspended.
+  _startAnimations(attempts = 50) {
+    this._clearAnimTimer();
+    this.lottieInstances = this.lottieInstances || [];
+    this.pendingAnims = this.pendingAnims || [];
+    this._reapDetachedAnimations();
+    // MM sets hidden=false when a show starts but calls resume() only when its fade ends; a
+    // data render inside that window clears MM's shared timer and resume() never comes. A
+    // module that MM reports visible is not suspended.
+    if (this.suspended && this.hidden === false) this.suspended = false;
+    if (this.suspended) return;
+    this.marqueeAnims.forEach((entry) => {
+      if (typeof entry.anim.play === "function") entry.anim.play();
+    });
+    if (this.reduceMotion || !this.enableLottie) return;
+    const gen = this.renderGen;
+    const lottieReady = typeof lottie !== "undefined";
+    let waiting = false;
+    this.pendingAnims.forEach((item) => {
+      if (item.player) return;
+      if (!item.container.isConnected) {
+        waiting = true;
+        return;
+      }
+      if (!lottieReady) {
+        // Bound by _loadLottieScript()'s onload; nothing is created before then.
+        this._loadLottieScript();
+        return;
+      }
+      const opts = {
+        container: item.container,
+        renderer: "svg",
+        loop: true,
+        autoplay: true
+      };
+      if (typeof item.src === "string") {
+        opts.path = this.resolveLottiePath(item.src);
+      } else {
+        opts.animationData = item.src;
+      }
+      let player;
+      try {
+        player = lottie.loadAnimation(opts);
+      } catch (err) {
+        Log.warn(`[${this.name}] Failed to start lottie animation:`, err);
+        item.player = { destroy() {}, play() {}, pause() {} }; // do not retry a failing file
+        return;
+      }
+      item.player = player;
+      this.lottieInstances.push({ player, container: item.container });
+    });
+    // Every surviving player is on a connected container (detached ones were reaped above), so
+    // play all of them, including previous-render players left on screen by a skipped/dropped
+    // swap while the module was suspended.
+    this.lottieInstances.forEach((entry) => {
+      if (typeof entry.player.play === "function") entry.player.play();
+    });
+    // Players from a previous render that is still attached are reaped once it is swapped out.
+    const staleLeft = this.lottieInstances.some(
+      (entry) => !this.pendingAnims.some((item) => item.player === entry.player)
+    );
+    if ((waiting || staleLeft) && attempts > 0) {
+      this.animTimer = setTimeout(() => {
+        this.animTimer = null;
+        if (gen !== this.renderGen) return;
+        this._startAnimations(attempts - 1);
+      }, 100);
+    } else if (waiting && !this.lottieInstances.length) {
+      // Not a failure while the previous tree is still live with players (swap skipped/dropped).
+      Log.warn(`[${this.name}] Gave up waiting for weather icon containers to attach`);
     }
-    try {
-      lottie.loadAnimation(opts);
-    } catch (e) {
-      // ignore if lottie fails
-    }
+  },
+
+  _pauseAnimations() {
+    this._clearAnimTimer();
+    (this.marqueeAnims || []).forEach((entry) => {
+      if (typeof entry.anim.pause === "function") entry.anim.pause();
+    });
+    (this.lottieInstances || []).forEach((entry) => {
+      if (typeof entry.player.pause === "function") entry.player.pause();
+    });
   },
 
   resolveLottiePath(src) {
@@ -869,9 +1034,18 @@ Module.register("MMM-GlassDailyCalendar", {
         const track = box.querySelector(".glass-marquee-track");
         if (!track) continue;
         if (track._marqueeAnim) {
-          track._marqueeAnim.cancel();
-          track._marqueeAnim = null;
+          const old = track._marqueeAnim;
+          const prior = (this.marqueeAnims || []).find((e) => e.anim === old);
+          if (prior) {
+            this.marqueeAnims = this.marqueeAnims.filter((e) => e !== prior);
+            this._cancelMarquee(prior);
+          } else {
+            old.cancel();
+            track._marqueeAnim = null;
+          }
         }
+        // Never start an animation on an element that is already detached.
+        if (!track.isConnected) continue;
         const distance = track.scrollWidth - box.clientWidth;
         if (box.clientWidth === 0 || distance <= 2) continue;
         const moveMs = (distance / speed) * 1000;
@@ -886,7 +1060,11 @@ Module.register("MMM-GlassDailyCalendar", {
           { duration: total, iterations: Infinity }
         );
         anim.currentTime = Math.random() * total;
+        // Created while the module is hidden: stay paused until resume().
+        if (this.suspended && this.hidden !== false && typeof anim.pause === "function") anim.pause();
         track._marqueeAnim = anim;
+        this.marqueeAnims = this.marqueeAnims || [];
+        this.marqueeAnims.push({ anim, track });
       }
     });
     root.querySelectorAll(".glass-marquee").forEach((box) => observer.observe(box));

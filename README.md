@@ -115,6 +115,14 @@ Add to `config/config.js`:
 - The node_helper never sends the raw ICS URL to the front end on error — only the source `name` (or a token-masked URL if no name is set) — since private ICS URLs grant calendar read access.
 - weather.gov requests use a 30s timeout, matching the ICS fetch path, so a hung request can't pile up against the next scheduled forecast fetch.
 
+### Animation lifecycle
+- Each weather Lottie icon is tracked together with the exact container element `getDom()` created for it; containers are never looked up by id. Players are created only for containers that are attached to the page, at most one per container.
+- `getDom()` never destroys live players, because MagicMirror keeps the previous tree on screen during the fade and skips the swap entirely when the markup is unchanged. Players are destroyed once their container is detached, which is checked on MagicMirror's `MODULE_DOM_UPDATED` notification (sent after every `updateDom()` resolves) with a bounded poll as a fallback.
+- `suspend()` (module hidden, e.g. by MMM-pages) pauses every player, cancels the poll, and creates nothing while suspended. `resume()` plays every surviving player and binds any containers still waiting. If MagicMirror drops its `resume()` call, a module it reports as visible is treated as resumed on the next render.
+- If the `lottie` global is missing, the script is injected once and the current render's containers are bound when it loads. Inline `animationData` objects are tracked the same way as path sources. With `reduceMotion` (or the `pi` profile) no players or timers exist and static Font Awesome icons are shown.
+
+- Title-marquee animations (Web Animations on overflowing event titles) follow the same rule: each is tracked with its element, cancelled once that element is detached (a running animation would otherwise keep the whole old render tree alive), never cancelled in `getDom()`, paused by `suspend()` and played by `resume()`. This applies even when Lottie is disabled.
+
 ### Notes
 - Optimized for `bottom_bar` with a single wide glass card and horizontal day chips.
 - Busy bar mixes all-day and timed events; overflow indicator shows when `maxEventsPerDay` is exceeded.
