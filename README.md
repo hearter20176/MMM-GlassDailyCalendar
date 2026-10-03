@@ -10,10 +10,11 @@ Glass-style horizontal daily calendar strip for MagicMirror `bottom_bar`. Pulls 
 - Optional per-date or rule-based backgrounds to personalize day chips.
 - Weather row: AmbientWeather realtime for today and weather.gov forecast for upcoming days (lat/long).
 
-## Screenshots
-Replace these placeholders with your captures (suggested paths in `docs/media/`):
+## Screenshot
 
-![Bottom bar view](docs/media/daily-strip.png "Bottom bar horizontal strip showing events and busy bars")
+![MMM-GlassDailyCalendar three-day strip in the night theme](docs/media/daily-strip.png "Three-day strip showing events, weather and busy bars")
+
+*Three-day strip in the night theme with sample events: today highlighted, all-day events as pills, timed events with their times, a busy bar per day, and the weather row (AmbientWeather for today, weather.gov for the next days).*
 
 ## Prerequisites
 - MagicMirror.
@@ -92,13 +93,37 @@ Add to `config/config.js`:
 }
 ```
 
-### Options quick reference
-- **Data**: `useCalendarModule`, `useMyAgenda`, `useAmbientWeather`, `icalSources[]` (url, name, color).
-- **Layout**: `daysToShow`, `startDayOffset`, `maxEventsPerDay`, `showOverflowIndicator`, `marqueeEvents`, `marqueeThreshold`, `marqueeSpeed`.
-- **Theme**: `theme`, `sunriseHour`, `sunsetHour`, `highlightToday`, `dimPastDays`.
-- **Icons/backgrounds**: `eventIcons` map, `calendarVisibility`, `dayBackgrounds`, `dayBackgroundRules`.
-- **Weather**: `weatherGov.enabled`, `latitude`, `longitude` (required for weather.gov forecast when enabled).
-- **Performance**: `performanceProfile` (`auto`/`pi`/`full`), `reduceMotion` to force low-motion and skip lottie/marquee on Pi.
+### Options
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `header` | string | `"Daily Calendar"` | Title shown at the top of the card, followed by the date range. |
+| `locale` | string | `"en"` (or MagicMirror's `locale`) | Moment.js locale for day names, dates and times. |
+| `daysToShow` | number | `5` | Number of day columns. |
+| `startDayOffset` | number | `0` | First day shown, in days from today. |
+| `highlightToday` | boolean | `true` | Outline today's column. |
+| `dimPastDays` | boolean | `true` | Dim columns before today (only visible with a negative `startDayOffset`). |
+| `marqueeEvents` | boolean | `false` | Scroll event titles that are too long to fit. |
+| `marqueeThreshold` | number | `26` | Minimum title length, in characters, before a title may scroll. `0` lets any overflowing title scroll. |
+| `marqueeSpeed` | number | `20` | Scroll speed in px/s. |
+| `useCalendarModule` | boolean | `false` | Also take events from MagicMirror's default calendar module (`CALENDAR_EVENTS`). |
+| `useMyAgenda` | boolean | `true` | Also take events from MMM-MyAgenda (`MYAGENDA_EVENTS`). |
+| `useAmbientWeather` | boolean | `true` | Use MMM-AmbientWeather's `AMBIENT_WEATHER_DATA` for today's weather cell. |
+| `showWeatherRow` | boolean | `true` | Show the weather row above the day columns. |
+| `weatherGov` | object | `{ enabled: true, latitude: null, longitude: null }` | weather.gov forecast for upcoming days. Needs US `latitude`/`longitude`; with either left `null` no forecast is fetched. |
+| `icalSources` | array | `[]` | ICS feeds fetched by the node helper. Each entry: `url` (string, or an array of URLs fetched separately), `name`, `color`, and optionally `timeZone` with `forceTimeZone: true` to pin floating times. |
+| `maxEventsPerDay` | number | `4` | Events listed per day (the `pi` profile caps this at 3). |
+| `showOverflowIndicator` | boolean | `true` | Show "+N more" for events past `maxEventsPerDay`. |
+| `dayBackgrounds` | object | `{}` | Map of `YYYY-MM-DD` to a CSS background (for example `"url('/path/to.jpg')"`). |
+| `dayBackgroundRules` | array | `[]` | `{ calendar, keyword, image }` rules: a day with a matching event gets that background. |
+| `eventIcons` | object | `{}` | Keyword to icon map, for example `{ birthday: { type: "fa", icon: "fa-solid fa-cake-candles" } }`. Types: `fa`, `box`, `iconoir`, `iconify`. |
+| `calendarVisibility` | object | `{}` | Map of calendar name to `true`/`false`; `false` hides that calendar. |
+| `theme` | string | `"autoSun"` | `"dark"`, `"light"`, `"auto"` (OS `prefers-color-scheme`) or `"autoSun"` (follows MMM-GlassClock's day/night page theme). |
+| `sunriseHour` / `sunsetHour` | number | `7` / `19` | Whole-hour fallback for `autoSun` when no page theme class is present. |
+| `performanceProfile` | string | `"auto"` | `"auto"` (detects Pi/ARM), `"pi"` or `"full"`. The `pi` profile uses static weather icons and no marquee. |
+| `reduceMotion` | boolean | `false` | Force the low-motion behaviour on any device (also follows `prefers-reduced-motion`). |
+| `updateInterval` | number | `600000` | ICS and forecast refresh interval in ms (10 minutes). |
+| `animationSpeed` | number | `400` | DOM update fade in ms. |
 
 ### Notifications & integrations
 - Listens for `CALENDAR_EVENTS`, `MYAGENDA_EVENTS`, and `AMBIENT_WEATHER_DATA` when the corresponding `use*` flags are `true`. Ensure those modules are configured to broadcast their payloads.
