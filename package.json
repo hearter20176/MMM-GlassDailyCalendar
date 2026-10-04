@@ -2,9 +2,27 @@
   "name": "MMM-GlassDailyCalendar",
   "version": "1.0.0",
   "description": "Glass-style daily calendar strip for MagicMirror bottom_bar.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hearter20176/MMM-GlassDailyCalendar.git"
+  },
+  "homepage": "https://github.com/hearter20176/MMM-GlassDailyCalendar#readme",
+  "bugs": {
+    "url": "https://github.com/hearter20176/MMM-GlassDailyCalendar/issues"
+  },
+  "license": "MIT",
+  "author": "hearter20176",
+  "keywords": [
+    "MagicMirror",
+    "calendar",
+    "ical",
+    "weather",
+    "glass"
+  ],
   "main": "MMM-GlassDailyCalendar.js",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.5.1",
@@ -13,5 +31,10 @@
     "moment": "^2.30.1",
     "node-fetch": "^3.3.2",
     "node-ical": "^0.22.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "globals": "^17.13.0"
   }
 }

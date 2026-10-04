@@ -32,6 +32,16 @@ cd MMM-GlassDailyCalendar
 npm install
 ```
 
+## Update
+
+```bash
+cd ~/MagicMirror/modules/MMM-GlassDailyCalendar
+git pull
+npm install --omit=dev
+```
+
+Then restart MagicMirror (for example `pm2 restart MagicMirror`).
+
 ## Configuration
 Add to `config/config.js`:
 ```js
@@ -90,7 +100,7 @@ Add to `config/config.js`:
     updateInterval: 10 * 60 * 1000,
     animationSpeed: 400
   }
-}
+},
 ```
 
 ### Options

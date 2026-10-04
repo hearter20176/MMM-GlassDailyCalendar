@@ -1,7 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const Module = require("module");
-const path = require("path");
+const path = require("node:path");
 
 const originalResolveFilename = Module._resolveFilename;
 Module._resolveFilename = function (request, ...rest) {
