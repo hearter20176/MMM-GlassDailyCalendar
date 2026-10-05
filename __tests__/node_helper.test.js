@@ -67,14 +67,55 @@ test("fetchCalendars: EVENTS payload echoes back the requesting instance's ident
   assert.equal(eventsCall.payload.identifier, "day-2");
 });
 
-// fetchForecast's weather.gov calls go through node-fetch via a dynamic
-// import() inside node_helper.js, which isn't interceptable the way
-// require("node_helper") is above (ESM dynamic import has its own resolver).
-// AbortSignal.timeout(30000) on both weather.gov calls, and the
-// kind: "forecast" tag on the resulting error, are covered by direct source
-// inspection (see node_helper.js) rather than a network-independent unit
-// test here; fetchForecast's early-return / no-coordinates guard is the
-// piece that's practical to unit test without hitting the network.
+// fetchForecast uses Node's built-in fetch, so stubbing globalThis.fetch keeps
+// these tests network-independent.
+test("fetchForecast: folds weather.gov day/night periods into per-day highs and lows, with timeouts on both calls", async (t) => {
+  const calls = [];
+  const realFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = realFetch; });
+  globalThis.fetch = async (url, opts) => {
+    calls.push({ url, opts });
+    const body = String(url).includes("/points/")
+      ? { properties: { forecast: "https://api.weather.gov/gridpoints/X/1,1/forecast" } }
+      : { properties: { periods: [
+          { startTime: "2026-10-05T06:00:00-04:00", isDaytime: true, temperature: 70, shortForecast: "Sunny", icon: "i" },
+          { startTime: "2026-10-05T18:00:00-04:00", isDaytime: false, temperature: 50 }
+        ] } };
+    return { ok: true, status: 200, json: async () => body };
+  };
+
+  const helper = makeHelper();
+  const sent = [];
+  helper.sendSocketNotification = (notification, payload) => sent.push({ notification, payload });
+
+  await helper.fetchForecast({ identifier: "day-1", latitude: 40, longitude: -75 });
+
+  assert.equal(calls.length, 2);
+  assert.ok(calls.every((c) => c.opts.signal instanceof AbortSignal));
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].notification, "GLASSDAILYCALENDAR_FORECAST");
+  assert.deepEqual(sent[0].payload.days, [{ date: "2026-10-05", high: 70, low: 50, shortForecast: "Sunny", icon: "i" }]);
+});
+
+test("fetchForecast: an HTTP failure is reported as a forecast-kind error", async (t) => {
+  const realFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = realFetch; });
+  globalThis.fetch = async () => ({ ok: false, status: 500, json: async () => ({}) });
+
+  const helper = makeHelper();
+  const sent = [];
+  helper.sendSocketNotification = (notification, payload) => sent.push({ notification, payload });
+  const realError = console.error;
+  t.after(() => { console.error = realError; });
+  console.error = () => {};
+
+  await helper.fetchForecast({ identifier: "day-1", latitude: 40, longitude: -75 });
+
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].notification, "GLASSDAILYCALENDAR_ERROR");
+  assert.equal(sent[0].payload.kind, "forecast");
+});
+
 test("fetchForecast: does nothing (and sends nothing) when latitude/longitude are absent", async () => {
   const helper = makeHelper();
   const sent = [];

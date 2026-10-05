@@ -68,7 +68,6 @@ async function fetchIcsText(rawUrl, userAgent, tag) {
   }
   throw lastErr;
 }
-const fetch = (...args) => import("node-fetch").then(({ default: f }) => f(...args));
 const {
   resolveTimeZone,
   convertToTimeZone,
