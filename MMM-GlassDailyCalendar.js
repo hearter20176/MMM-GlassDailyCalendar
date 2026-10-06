@@ -71,7 +71,7 @@ Module.register("MMM-GlassDailyCalendar", {
       this.file("node_modules/iconify-icon/dist/iconify-icon.min.js")
     ];
     if (!reduceMotion) {
-      scripts.push(this.file("vendor/lottie.min.js"));
+      scripts.push(this.file("node_modules/lottie-web/build/player/lottie.min.js"));
     }
     return scripts;
   },
@@ -200,7 +200,7 @@ Module.register("MMM-GlassDailyCalendar", {
   // ---------------------------------------------------------------------------
   // Notifications
   // ---------------------------------------------------------------------------
-  notificationReceived(notification, payload, sender) {
+  notificationReceived(notification, payload) {
     if (notification === "CALENDAR_EVENTS" && this.config.useCalendarModule) {
       this.handleCalendarEvents(payload || []);
     }
@@ -349,7 +349,7 @@ Module.register("MMM-GlassDailyCalendar", {
       .filter(Boolean);
 
     this.events = this.events.concat(normalized);
-    this.pruneDayDuplicates(range.start, range.end);
+    this.pruneDayDuplicates(range.start);
     this.loaded = true;
     this.queueDomUpdate(this.config.animationSpeed);
   },
@@ -398,7 +398,7 @@ Module.register("MMM-GlassDailyCalendar", {
     return t.trim();
   },
 
-  pruneDayDuplicates(rangeStart, rangeEnd) {
+  pruneDayDuplicates(rangeStart) {
     if (!this.events || !this.events.length) return;
     const seen = new Set();
 
@@ -897,7 +897,7 @@ Module.register("MMM-GlassDailyCalendar", {
     if (this._lottieLoading || this._lottieFailed) return;
     this._lottieLoading = true;
     const script = document.createElement("script");
-    script.src = this.file("vendor/lottie.min.js");
+    script.src = this.file("node_modules/lottie-web/build/player/lottie.min.js");
     script.onload = () => {
       this._lottieLoading = false;
       this._startAnimations();
@@ -1347,7 +1347,7 @@ Module.register("MMM-GlassDailyCalendar", {
         const sr = moment(summary.sunrise);
         const ss = moment(summary.sunset);
         return now.isBetween(sr, ss, null, "[)");
-      } catch (e) {
+      } catch {
         // ignore parse issues
       }
     }
@@ -1392,7 +1392,7 @@ Module.register("MMM-GlassDailyCalendar", {
       try {
         sunrise = moment(this.weatherSummary.sunrise).hour();
         sunset = moment(this.weatherSummary.sunset).hour();
-      } catch (e) {
+      } catch {
         // ignore
       }
     }

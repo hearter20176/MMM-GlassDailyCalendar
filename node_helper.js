@@ -46,7 +46,7 @@ async function fetchIcsText(rawUrl, userAgent, tag) {
       try {
         fs.mkdirSync(CACHE_DIR, { recursive: true });
         fs.writeFileSync(cacheFile(url), text);
-      } catch (err) {
+      } catch {
         // cache is best-effort
       }
       return text;
@@ -63,7 +63,7 @@ async function fetchIcsText(rawUrl, userAgent, tag) {
         `using cached copy from ${Math.round(ageMs / 60000)} min ago`);
       return fs.readFileSync(file, "utf8");
     }
-  } catch (err) {
+  } catch {
     // no usable cache
   }
   throw lastErr;
