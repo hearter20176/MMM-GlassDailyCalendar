@@ -67,7 +67,9 @@ Module.register("MMM-GlassDailyCalendar", {
   getScripts() {
     const reduceMotion = this.shouldReduceMotion();
     const scripts = [
-      this.file("node_modules/moment/min/moment-with-locales.min.js"),
+      // MagicMirror's shared moment (with locales). A module-local copy would
+      // replace the global and strip the moment-timezone MMM-GlassClock relies on.
+      "moment.js",
       this.file("node_modules/iconify-icon/dist/iconify-icon.min.js")
     ];
     if (!reduceMotion) {
