@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `package.json`: lowercase package name and `"type": "commonjs"`.
 - ESLint reports unused catch bindings and arguments, and lints `package.json`, as modules.magicmirror.builders does.
 - Uses MagicMirror's shared `moment.js` instead of loading its own copy, which replaced the global moment and removed the timezone support MMM-GlassClock relies on. `moment` is now only a dev dependency (for tests).
+- Lottie is loaded once and shared: `getScripts()` skips it when an earlier module (MMM-GlassClock, MMM-GlassDailyCalendar or MMM-AmbientWeather, all on lottie-web 5.10.2) already provided it.
 
 ## [1.0.0]
 
