@@ -30,7 +30,7 @@
     "boxicons": "^2.1.4",
     "iconify-icon": "^3.0.3",
     "lottie-web": "5.10.2",
-    "node-ical": "^0.27.3"
+    "node-ical": "^0.27.6"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
